@@ -1,98 +1,29 @@
-# fastapi-book-management-api
-from fastapi import Body, FastAPI,Query,Path
-from pydantic import BaseModel,Field
-from typing import Optional
+Book Management API (FastAPI & Pydantic)
+Hi there! This project is a lightweight REST API built with Python and FastAPI to manage a book inventory.
 
+Coming from a Business Analysis background, I didn't just want to write endpoints that worked—I wanted to make sure the data entering the system actually made sense. This project focuses heavily on strict API data contracts, schema validation, and thinking about the request life-cycle from a product perspective.
 
-app = FastAPI()
+Features & Business Logic
+Data Integrity First (Strict Validation): Garbage in, garbage out. I used Pydantic models to enforce real business rules right at the API gateway. For example, book descriptions are capped at 100 characters to prevent database bloat, and ratings must legitimately fall between 1.0 and 5.0.
 
-class Book:
-    id: Optional[int]=None
-    title: str
-    author: str 
-    description: str 
-    rating: float 
-    published_date: int
-    def __init__(self, id, title, author, description, rating,published_date):
-        self.id = id
-        self.title = title
-        self.author = author
-        self.description = description
-        self.rating = rating
-        self.published_date=published_date
+Flexible Querying: I built endpoints that reflect how a user or frontend might actually search for data—whether that's fetching multiple specific books via query lists or filtering inventory by publication date.
 
-class BookRequest(BaseModel):
-    id : int = Field(description="Id is not compulsory",default=None)
-    title: str = Field(min_length=3)
-    author: str = Field(min_length=3)
-    description: str = Field(min_length=3,max_length=100)
-    rating: float = Field(gt=-1,lt=6)
-    published_date: int
+Interactive Documentation: Good software needs good docs. I configured custom Pydantic schema examples so the auto-generated Swagger UI is immediately readable, clear, and ready for anyone to test.
 
-    model_config={
-        "json_schema_extra":{
-            "example":{
-                "title":"New Book",
-                "author":"Meeran",
-                "description":"New Description",
-                "rating":5,
-                "published_date":2000
-            }
-        }
-    }
-Books = [
-    Book(1, "thinking fast and slow", "idk", "It's so awesome", 4,2000),
-    Book(2, "influence","idk","I haven't read it yet",4,2019),
-    Book(3, "how to win friends and influence people", "cale", "It's spectaculus", 3.8,2020),
-    Book(4, "Never split the difference", "idk", "It must be good", 3.9,2021),
-    Book(5, "book5", "idk", "dummy", 4,2000),
-    Book(6, "book5", "idk", "dummy", 4,2000)
-]
+Tech Stack
+Python
 
-@app.get("/books/")
-async def all_books():
-    return Books
-@app.get("/books/get_book/{book_id}")
-async def get_book_with_id(book_id:int = Path(gt=0)):
-    for i in range(len(Books)):
-        if Books[i].id == book_id:
-            return Books[i]
-@app.get("/books/get_multiple_books_by_id/")
-async def multiple_books_by_id(book_ids: list[int] = Query(default=[])):
-    return [Book for Book in Books if Book.id in book_ids]
+FastAPI
 
-@app.get("/books/fetch_book_by_rating")
-async def fetch_book_by_rating(rating:float =Query(ge=1,le=5)):
-     return [Book for Book in Books if Book.rating == rating]
+Pydantic v2
 
-@app.put("/books/update_book")
-async def update_book(book: BookRequest):
-    for i in range(len(Books)):
-        if Books[i].id==book.id:
-            Books[i]=Book(**book.model_dump())
+API Endpoints Preview
+GET /books/ - Fetch the entire book inventory
 
-@app.get("/books/by_published_date/")
-async def by_published_date(published_date:int = Query(ge=1900,le=2031)):
-     return [Book for Book in Books if Book.published_date == published_date]
+GET /books/get_book/{book_id} - Fetch a single book by its ID
 
+POST /books/new_books/ - Add a new book (with auto-generating sequential IDs)
 
+PUT /books/update_book - Update an existing book's metrics
 
-@app.post("/books/new_books/")
-async def new_books(book_request: BookRequest):
-    new_book=Book(**book_request.model_dump())
-    book_find_bookid(new_book)
-    print(type(new_book.id))
-    Books.append(new_book)
-    return "You're book is added successfully"
-
-def book_find_bookid(book: Book):
-    if len(Books)>0:
-        book.id=Books[-1].id+1
-    else:
-        book.id=1
-@app.delete("/book/delete_book/{book_id}")
-async def delete_book(book_id:int):
-    for i in range(len(Books)):
-        if Books[i].id == book_id:
-            Books.pop(i)
-            break
+DELETE /book/delete_book/{book_id} - Remove a record from the inventory
